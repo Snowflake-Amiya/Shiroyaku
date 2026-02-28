@@ -122,7 +122,8 @@ fn fetch_conditions_sync(no_update: bool) -> Result<Vec<ConditionData>, Box<dyn 
         .filter(|t| {
             let title_lower = t.title.to_lowercase();
             let groups_lower: Vec<String> = t.groups.iter().map(|g| g.to_lowercase()).collect();
-            title_lower.contains("disease")
+
+            if title_lower.contains("disease")
                 || title_lower.contains("disorder")
                 || title_lower.contains("syndrome")
                 || title_lower.contains("cancer")
@@ -130,20 +131,40 @@ fn fetch_conditions_sync(no_update: bool) -> Result<Vec<ConditionData>, Box<dyn 
                 || title_lower.contains("tumor")
                 || title_lower.contains("arthritis")
                 || title_lower.contains("diabetes")
-                || groups_lower.iter().any(|g| {
-                    g.contains("disorder")
-                        || g.contains("cancer")
-                        || g.contains("infection")
-                        || g.contains("injury")
-                        || g.contains("mental health")
-                })
+            {
+                return true;
+            }
+
+            let bad_keywords = [
+                "healthy", "nutrition", "exercise", "dietary", "weight loss",
+                "smoking", "tobacco", "screening", "test ", "tests", "procedure",
+                "surgery", "tips for", "living with", "prevention", "wellness",
+            ];
+            if bad_keywords.iter().any(|&kw| title_lower.contains(kw)) {
+                return false;
+            }
+
+            if groups_lower.iter().any(|g| {
+                g.contains("cancer")
+                    || g.contains("infection")
+                    || g.contains("mental")
+                    || g.contains("injury")
+                    || g.contains("disorder")
+                    || g.contains("heart")
+                    || g.contains("blood")
+                    || g.contains("nerv")
+                    || g.contains("digestive")
+                    || g.contains("bones")
+                    || g.contains("lung")
+                    || g.contains("brain")
+                    || g.contains("immune")
+            }) {
+                return true;
+            }
+
+            true
         })
         .collect();
-
-    println!(
-        "Filtered to {} diseases, disorders & conditions.",
-        topics_to_process.len()
-    );
 
     // Extract sections for each condition
     let conditions: Vec<ConditionData> = topics_to_process
