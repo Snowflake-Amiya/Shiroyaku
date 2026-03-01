@@ -1,12 +1,12 @@
 # Development status
 
-Currently, this project is still in development. I recommend waiting for an official release before using it. The release won’t take long it should be ready in about 1–2 weeks. The tool can be used offline and even on weak devices. 
+Currently, this project is still in development. I recommend waiting for an official release before using it. The release won’t take long it should be ready in about 1–2 weeks.
 
 # Shiroyaku - Medical Symptom Search Engine
 
 A medical symptom search application that helps users find relevant medical conditions based on their symptoms. The application uses semantic embeddings to match user-described symptoms with conditions from MedlinePlus.
 
-The only part that requires an internet connection is the initial setup when you first run it. After that, it is still recommended to have internet access because the tool checks for updates to each condition every week.
+The tool can be used offline and even on weak devices. The only part that requires an internet connection is the initial setup when you first run it. After that, it is still recommended to have internet access because the tool checks for updates to each condition every week.
 
 ## Features
 
