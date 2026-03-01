@@ -1,114 +1,115 @@
-# Shiroyaku
+# Development status
 
-A MedlinePlus-powered symptom search engine that uses vector embeddings to help you find relevant medical conditions based on your symptoms.
+Currently this project is still in development, I would recommend waiting for a release
+until actually used. The release won't take too long from now, around a 1-2 week*s or so.
 
-## Disclaimer
+# Shiroyaku - Medical Symptom Search Engine
 
-**This tool is NOT a diagnosis tool.** Always consult a medical professional for proper diagnosis and treatment. This program is for informational purposes only.
+A medical symptom search application that helps users find relevant medical conditions based on their symptoms. The application uses semantic embeddings to match user-described symptoms with conditions from MedlinePlus.
 
-## Description
+## Features
 
-Shiroyaku is a minimalist program that fetches the latest medical information from MedlinePlus, embeds it using Gemma 300M, and allows you to search for conditions by describing your symptoms. It uses semantic search with LanceDB across three categories:
-- Descriptions
-- Etiology (causes)
-- Manifestations (symptoms)
-
-## Requirements
-
-### All Platforms
-- [Rust](https://rustup.rs/) (latest stable version)
-- ~10GB free disk space
+- **Symptom Search**: Enter your symptoms and get top 5 matching medical conditions
+- **Cross-Reference Search**: Searches across descriptions, etiology, and manifestations
+- **Relevance Scoring**: Conditions are ranked by relevance score
+- **Detailed Information**: Expand any result to see full descriptions, causes, and symptoms
+- **Professional Medical Context**: Designed for healthcare professionals
 
 ## Installation
 
-### 1. Install Rust
+### Prerequisites
 
-**Windows:**
-```powershell
-# Download and run rustup-init.exe from https://rustup.rs/
-# Or via PowerShell:
-irm https://rustup.rs | iex
+- Rust (1.70+)
+- Node.js (for building Tauri)
+- System dependencies for Tauri (see below)
+
+### System Dependencies
+
+For Linux (Ubuntu/Debian):
+```bash
+sudo apt-get update
+sudo apt-get install -y \
+    libwebkit2gtk-4.1-dev \
+    libgtk-3-dev \
+    libayatana-appindicator3-dev \
+    librsvg2-dev \
+    patchelf
 ```
 
-**MacOS/Linux:**
+For Fedora:
 ```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+sudo dnf install -y \
+    webkit2gtk4.1-devel \
+    gtk3-devel \
+    libappindicator-gtk3-devel \
+    librsvg2-devel
 ```
 
-### 2. Clone and Build
+### Build Steps
 
+1. Install Tauri CLI:
 ```bash
-# Clone the repository
-git clone https://github.com/Snowflake-Amiya/Shiroyaku.git
-cd Shiroyaku
+npm install -g @tauri-apps/cli
+```
 
-# Build the project
-cargo build --release
+2. Build the Tauri app:
+```bash
+cd src-tauri
+cargo tauri build
+```
+
+3. Run the app:
+```bash
+cargo tauri dev
+```
+
+## Project Structure
+
+```
+.
+├── src/                    # Original terminal application
+│   ├── main.rs            # Entry point
+│   ├── fetch/             # MedlinePlus data fetching
+│   ├── embedding/         # LanceDB embeddings
+│   └── search/            # Cross-reference search
+├── src-tauri/             # Tauri desktop application
+│   ├── src/
+│   │   ├── lib.rs        # Tauri commands
+│   │   ├── main.rs       # Tauri entry
+│   │   ├── embedding.rs  # Embedding logic
+│   │   ├── fetch.rs      # Data fetching
+│   │   └── search.rs     # Search logic
+│   ├── Cargo.toml
+│   ├── tauri.conf.json
+│   └── capabilities/
+├── dist/                  # Frontend assets
+│   └── index.html        # Web UI
+└── index.html            # Original UI reference
 ```
 
 ## Usage
 
-### First Run (Requires Internet)
+1. Launch the application
+2. On first run, the database will initialize (this may take a few minutes)
+3. Enter your symptoms in the search box (e.g., "chest pain shortness of breath")
+4. View the top 5 matching conditions
+5. Click on any result to expand and see detailed information
 
-```bash
-# Run the program (will download latest medical data on first run)
-cargo run
-```
+## GUI Features
 
-The first run will:
-1. Fetch latest MedlinePlus data (~5-10 minutes)
-2. Embed all conditions (~10-30 minutes depending on hardware)
-3. Show the search interface
+The GUI matches the style of the original index.html with:
 
-### Subsequent Runs (Works Offline)
+- **Calm Color Palette**: Sage green accent (#6B8E8E) on warm off-white (#FAF9F6)
+- **Search Engine Layout**: Centered search bar with instant filtering
+- **Keyboard Navigation**: Arrow keys + Enter support
+- **Filter Tabs**: All/Recent/Critical/Follow-up (visual only in Tauri version)
+- **Clickable Results**: Expandable cards showing detailed condition information
+- **Accessibility**: Semantic HTML, clear visual hierarchy, reduced motion support
 
-```bash
-# Skip fetching, use existing embeddings
-cargo run -- --no-update
-```
+## Medical Disclaimer
 
-### Customize Search Results
-
-```bash
-# Change number of top results to consider
-cargo run -- --top-k 30
-```
-
-## How to Use
-
-1. **Launch the program**
-2. **Read the disclaimer** - This is important!
-3. **Enter your symptoms** - Describe what you're feeling (e.g., "I have a headache and fever")
-4. **View results** - The program shows top 5 likely conditions with:
-   - Match scores
-   - Description snippets
-   - Etiology (causes) snippets
-   - Manifestation (symptom) snippets
-5. **Search again** or type `q` to quit
-
-## Features
-
-- Fetches latest medical data from MedlinePlus
-- Uses EmbeddingGemma 300M for semantic search
-- Cross-references description, etiology, and manifestations
-- Weighted scoring (manifestations weighted highest)
-- Works offline after first run
-- Progress bars for long operations
-
-## Troubleshooting
-
-### "No cached data available"
-Run without `--no-update` flag to fetch fresh data:
-```bash
-cargo run
-```
-
-### Out of memory
-The embedding model requires significant RAM. Close other applications or use a machine with more memory.
-
-### Slow performance
-The first run is slow because it needs to download and embed all medical data. Subsequent runs are much faster.
+This application is for informational purposes only. It is NOT a diagnosis tool. Always consult a medical professional for proper evaluation and treatment.
 
 ## License
 
-MIT License
+MIT License - See LICENSE file for details

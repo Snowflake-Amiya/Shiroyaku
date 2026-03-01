@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shiroyaku - Medical Symptom Search</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@tauri-apps/api@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #FAF9F6;
+      --bg-secondary: #F5F3EE;
+      --bg-card: #FFFFFF;
+      --fg-primary: #2D3A3A;
+      --fg-secondary: #5A6B6B;
+      --fg-muted: #8A9898;
+      --accent: #6B8E8E;
+      --accent-hover: #5A7D7D;
+      --accent-light: #E8F0EE;
+      --border: #E5E8E4;
+      --shadow: rgba(45, 58, 58, 0.06);
+    }
+
+    * {
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .font-display {
+      font-family: 'Fraunces', serif;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--fg-primary);
+    }
+
+    .bg-noise {
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      background-size: 200px;
+      opacity: 0.015;
+    }
+
+    .search-input:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px var(--accent), 0 8px 32px rgba(107, 142, 142, 0.15);
+    }
+
+    .card-hover {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px var(--shadow);
+    }
+
+    .result-card {
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.15s ease;
+    }
+
+    .result-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px var(--shadow);
+      background-color: var(--bg-secondary);
+    }
+
+    .result-card.expanded {
+      background-color: var(--bg-secondary);
+    }
+
+    .nav-item {
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .nav-item:hover {
+      background-color: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .nav-item.active {
+      background-color: var(--accent);
+      color: white;
+    }
+
+    .suggestion-item {
+      transition: background-color 0.1s ease;
+    }
+
+    .suggestion-item:hover,
+    .suggestion-item.selected {
+      background-color: var(--bg-secondary);
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-fade-in-up {
+      animation: fadeInUp 0.5s ease forwards;
+    }
+
+    .animate-slide-down {
+      animation: slideDown 0.2s ease forwards;
+    }
+
+    .stagger-1 { animation-delay: 0.05s; }
+    .stagger-2 { animation-delay: 0.1s; }
+    .stagger-3 { animation-delay: 0.15s; }
+    .stagger-4 { animation-delay: 0.2s; }
+    .stagger-5 { animation-delay: 0.25s; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .animate-fade-in-up,
+      .animate-slide-down {
+        animation: none;
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    .status-badge {
+      font-size: 11px;
+      letter-spacing: 0.02em;
+    }
+
+    .loading-spinner {
+      border: 3px solid var(--bg-secondary);
+      border-top: 3px solid var(--accent);
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .match-badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .match-description { background-color: #DBEAFE; color: #1D4ED8; }
+    .match-etiology { background-color: #FEF3C7; color: #D97706; }
+    .match-manifestation { background-color: #FCE7F3; color: #DB2777; }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="fixed inset-0 bg-noise pointer-events-none"></div>
+  
+  <div class="relative min-h-screen flex">
+    <aside class="w-64 border-r border-solid min-h-screen p-5 flex flex-col" style="border-color: var(--border); background-color: var(--bg-card);">
+      <div class="mb-8 animate-fade-in-up" style="opacity: 0;">
+        <h1 class="font-display text-xl font-500" style="color: var(--fg-primary);">Shiroyaku</h1>
+        <p class="text-xs mt-1" style="color: var(--fg-muted);">Medical Symptom Search</p>
+      </div>
+
+      <nav class="flex-1 space-y-1">
+        <a href="#" class="nav-item active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-500 animate-fade-in-up stagger-1" style="opacity: 0;">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          Search
+        </a>
+      </nav>
+
+      <div class="pt-5 border-t" style="border-color: var(--border);">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-500" style="background-color: var(--accent-light); color: var(--accent);">
+            <3
+          </div>
+          <div>
+            <p class="text-sm font-500" style="color: var(--fg-primary);">User</p>
+            <p class="text-xs" style="color: var(--fg-muted);">Placeholder</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col">
+      <div class="flex-1 flex flex-col items-center justify-center px-8 py-12">
+        <div class="w-full max-w-2xl">
+          <div class="text-center mb-10 animate-fade-in-up" style="opacity: 0;">
+            <h2 class="font-display text-3xl font-400 mb-2" style="color: var(--fg-primary);">Find conditions</h2>
+            <p class="text-sm" style="color: var(--fg-secondary);">Search by symptoms, condition name, or keywords</p>
+          </div>
+
+          <div class="relative mb-6 animate-fade-in-up stagger-1" style="opacity: 0;">
+            <div class="relative">
+              <input 
+                type="text" 
+                id="searchInput"
+                class="search-input w-full px-5 py-4 pr-12 text-base rounded-2xl border transition-all duration-200"
+                style="background-color: var(--bg-card); border-color: var(--border); color: var(--fg-primary);"
+                placeholder="Enter your symptoms (e.g., chest pain, shortness of breath)..."
+                autocomplete="off"
+              >
+              <svg class="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5" style="color: var(--fg-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+            </div>
+
+            <div id="loadingIndicator" class="hidden absolute top-full left-0 right-0 mt-2 p-4 rounded-xl border animate-slide-down" style="background-color: var(--bg-card); border-color: var(--border); box-shadow: 0 8px 32px var(--shadow);">
+              <div class="flex items-center gap-3">
+                <div class="loading-spinner"></div>
+                <span class="text-sm" style="color: var(--fg-secondary);">Searching conditions...</span>
+              </div>
+            </div>
+          </div>
+
+          <div id="initialState" class="flex flex-col items-center gap-4 mb-16 animate-fade-in-up stagger-2" style="opacity: 0;">
+            <div class="flex items-center gap-3">
+              <div class="loading-spinner" style="width: 24px; height: 24px;"></div>
+              <p class="text-sm" style="color: var(--fg-secondary);">Checking database...</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="resultsSection" class="w-full max-w-3xl hidden">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-500" style="color: var(--fg-primary);">Top Matching Conditions</h3>
+            <span id="resultCount" class="text-xs" style="color: var(--fg-muted);"></span>
+          </div>
+          <div id="resultsContainer" class="rounded-xl border overflow-hidden space-y-3" style="background-color: var(--bg-card); border-color: var(--border);">
+          </div>
+          <div class="mt-6 p-4 rounded-xl border" style="background-color: #FEF3C7; border-color: #FCD34D;">
+            <p class="text-xs font-500" style="color: #92400E;">This is NOT a diagnosis. Consult a medical professional for proper evaluation.</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { invoke } from 'https://unpkg.com/@tauri-apps/api@2/core';
+    
+    const searchInput = document.getElementById('searchInput');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const initialState = document.getElementById('initialState');
+    const resultsSection = document.getElementById('resultsSection');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const resultCount = document.getElementById('resultCount');
+
+    let expandedCard = null;
+
+    async function initialize() {
+      try {
+        const hasDb = await invoke('check_database');
+        
+        if (hasDb) {
+          enableSearch();
+        } else {
+          initialState.innerHTML = `
+            <div class="flex flex-col items-center gap-3">
+              <div class="loading-spinner"></div>
+              <p class="text-sm" style="color: var(--fg-secondary);">Initializing database (first time setup)...</p>
+              <p class="text-xs" style="color: var(--fg-muted);">This may take several minutes</p>
+            </div>
+          `;
+          try {
+            await invoke('initialize_database', { noUpdate: false });
+            enableSearch();
+          } catch (err) {
+            initialState.innerHTML = `
+              <div class="flex flex-col items-center gap-2">
+                <p class="text-sm" style="color: #DC2626;">Error: ${err}</p>
+                <p class="text-xs" style="color: var(--fg-muted);">Check console for details</p>
+              </div>
+            `;
+          }
+        }
+      } catch (err) {
+        initialState.innerHTML = `
+          <div class="flex flex-col items-center gap-2">
+            <p class="text-sm" style="color: #DC2626;">Error: ${err}</p>
+            <p class="text-xs" style="color: var(--fg-muted);">Check console for details</p>
+          </div>
+        `;
+      }
+    }
+
+    function enableSearch() {
+      searchInput.disabled = false;
+      initialState.innerHTML = `
+        <p class="text-sm" style="color: var(--fg-muted);">Ready to search. Enter your symptoms above.</p>
+      `;
+    }
+
+    let searchTimeout = null;
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.trim();
+      
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+
+      if (query.length < 3) {
+        resultsSection.classList.add('hidden');
+        loadingIndicator.classList.add('hidden');
+        return;
+      }
+
+      searchTimeout = setTimeout(async () => {
+        await performSearch(query);
+      }, 500);
+    });
+
+    async function performSearch(query) {
+      loadingIndicator.classList.remove('hidden');
+      resultsSection.classList.add('hidden');
+
+      try {
+        const results = await invoke('search_symptoms', { 
+          symptoms: query,
+          topK: 5
+        });
+        
+        renderResults(results);
+      } catch (err) {
+        console.error('Search error:', err);
+        resultsContainer.innerHTML = `
+          <div class="p-6 text-center">
+            <p class="text-sm" style="color: #DC2626;">Error: ${err}</p>
+          </div>
+        `;
+        resultsSection.classList.remove('hidden');
+      } finally {
+        loadingIndicator.classList.add('hidden');
+      }
+    }
+
+    function renderResults(results) {
+      if (!results || results.length === 0) {
+        resultsContainer.innerHTML = `
+          <div class="p-12 text-center">
+            <p class="text-sm" style="color: var(--fg-muted);">No matching conditions found. Try different symptoms.</p>
+          </div>
+        `;
+        resultCount.textContent = '';
+      } else {
+        resultCount.textContent = `Showing top ${results.length} results`;
+        
+        resultsContainer.innerHTML = results.map((result, index) => `
+          <div class="result-card p-5 rounded-xl border cursor-pointer animate-fade-in-up" 
+               style="opacity: 0; animation-delay: ${index * 0.1}s; background-color: var(--bg-card); border-color: var(--border);"
+               data-rank="${result.rank}"
+               onclick="toggleExpand(${result.rank})">
+            <div class="flex items-start justify-between">
+              <div class="flex items-start gap-4">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-500" 
+                     style="background-color: var(--accent-light); color: var(--accent);">
+                  #${result.rank}
+                </div>
+                <div>
+                  <h4 class="text-base font-500" style="color: var(--fg-primary);">${result.name}</h4>
+                  <div class="flex gap-2 mt-2">
+                    ${result.description_matches > 0 ? '<span class="match-badge match-description">Description</span>' : ''}
+                    ${result.etiology_matches > 0 ? '<span class="match-badge match-etiology">Etiology</span>' : ''}
+                    ${result.manifestation_matches > 0 ? '<span class="match-badge match-manifestation">Manifestations</span>' : ''}
+                  </div>
+                </div>
+              </div>
+              <div class="text-right">
+                <span class="text-xs" style="color: var(--fg-muted);">Relevance Score</span>
+                <p class="text-lg font-500" style="color: var(--accent);">${result.score.toFixed(1)}</p>
+              </div>
+            </div>
+            
+            <div id="details-${result.rank}" class="hidden mt-4 pt-4" style="border-top: 1px solid var(--border);">
+              ${result.description_text ? `
+                <div class="mb-3">
+                  <p class="text-xs font-500 mb-1" style="color: var(--fg-secondary);">Description</p>
+                  <p class="text-sm" style="color: var(--fg-primary);">${truncate(result.description_text, 300)}</p>
+                </div>
+              ` : ''}
+              ${result.etiology_text ? `
+                <div class="mb-3">
+                  <p class="text-xs font-500 mb-1" style="color: #D97706;">Etiology (Causes)</p>
+                  <p class="text-sm" style="color: var(--fg-primary);">${truncate(result.etiology_text, 300)}</p>
+                </div>
+              ` : ''}
+              ${result.manifestation_text ? `
+                <div>
+                  <p class="text-xs font-500 mb-1" style="color: #DB2777;">Manifestations (Symptoms)</p>
+                  <p class="text-sm" style="color: var(--fg-primary);">${truncate(result.manifestation_text, 300)}</p>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `).join('');
+      }
+      
+      resultsSection.classList.remove('hidden');
+    }
+
+    function truncate(text, maxLength) {
+      if (!text) return '';
+      if (text.length <= maxLength) return text;
+      return text.substring(0, maxLength) + '...';
+    }
+
+    window.toggleExpand = function(rank) {
+      const details = document.getElementById(`details-${rank}`);
+      const card = details.parentElement;
+      
+      if (expandedCard && expandedCard !== card) {
+        const prevDetails = expandedCard.querySelector('[id^="details-"]');
+        if (prevDetails) {
+          prevDetails.classList.add('hidden');
+          expandedCard.classList.remove('expanded');
+        }
+      }
+      
+      if (details.classList.contains('hidden')) {
+        details.classList.remove('hidden');
+        card.classList.add('expanded');
+        expandedCard = card;
+      } else {
+        details.classList.add('hidden');
+        card.classList.remove('expanded');
+        expandedCard = null;
+      }
+    };
+
+    searchInput.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter') {
+        const query = searchInput.value.trim();
+        if (query.length >= 3) {
+          if (searchTimeout) {
+            clearTimeout(searchTimeout);
+          }
+          await performSearch(query);
+        }
+      }
+    });
+
+    initialize();
+  </script>
+</body>
+</html>

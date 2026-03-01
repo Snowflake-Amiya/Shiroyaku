@@ -1,36 +1,108 @@
-mod fetch;
-mod embedding;
-mod search;
-mod ui;
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use anyhow::Result;
-use clap::Parser;
-use fastembed::{EmbeddingModel, InitOptions, TextEmbedding};
-use std::path::Path;
+pub mod embedding;
+pub mod fetch;
+pub mod search;
+pub mod ui;
 
-#[derive(Parser)]
-#[command(author, version, about = "MedlinePlus Symptom Search Engine with LanceDB embeddings")]
-struct Cli {
-    /// Skip fetching latest data from MedlinePlus
-    #[arg(long, default_value_t = false)]
-    no_update: bool,
-    
-    /// Number of top results to consider from each embedding table
-    #[arg(long, default_value_t = 20)]
-    top_k: usize,
+use serde::{Deserialize, Serialize};
+use tauri::Manager;
+
+/// Search result for frontend
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SearchResult {
+    pub rank: usize,
+    pub name: String,
+    pub score: f32,
+    pub description_matches: usize,
+    pub etiology_matches: usize,
+    pub manifestation_matches: usize,
+    pub description_text: Option<String>,
+    pub etiology_text: Option<String>,
+    pub manifestation_text: Option<String>,
 }
 
-fn needs_fetch(no_update: bool) -> bool {
-    if no_update {
-        return false;
+/// Check if database is ready
+#[tauri::command]
+async fn check_database() -> Result<bool, String> {
+    let has_embeddings = embedding::has_embeddings().await;
+    Ok(has_embeddings)
+}
+
+/// Initialize database (fetch and embed if needed)
+#[tauri::command]
+async fn initialize_database(no_update: bool) -> Result<String, String> {
+    let needs_fresh_data = !no_update && needs_fetch();
+    
+    if needs_fresh_data {
+        let conditions = fetch::fetch_conditions(no_update)
+            .await
+            .map_err(|e| format!("Error fetching conditions: {}", e))?;
+        
+        if !conditions.is_empty() {
+            let mut model = fastembed::TextEmbedding::try_new(
+                fastembed::InitOptions::new(fastembed::EmbeddingModel::EmbeddingGemma300M),
+            ).map_err(|e| format!("Error loading model: {}", e))?;
+            
+            embedding::embed_conditions(conditions, &mut model)
+                .await
+                .map_err(|e| format!("Error embedding: {}", e))?;
+        }
     }
     
-    let xml_path = Path::new("data/mplus_topics_latest.xml");
+    Ok("Database initialized".to_string())
+}
+
+/// Perform a symptom search
+#[tauri::command]
+async fn search_symptoms(symptoms: String, top_k: usize) -> Result<Vec<SearchResult>, String> {
+    if symptoms.trim().is_empty() {
+        return Err("Please enter your symptoms".to_string());
+    }
+    
+    if !embedding::has_embeddings().await {
+        return Err("Database not initialized. Please run initialization first.".to_string());
+    }
+    
+    let mut model = fastembed::TextEmbedding::try_new(
+        fastembed::InitOptions::new(fastembed::EmbeddingModel::EmbeddingGemma300M),
+    ).map_err(|e| format!("Error loading model: {}", e))?;
+    
+    let query_embedding = model
+        .embed(vec![symptoms], None)
+        .map_err(|e| format!("Error embedding query: {}", e))?[0]
+        .clone();
+    
+    let results = search::cross_reference_search(query_embedding, top_k)
+        .await
+        .map_err(|e| format!("Search error: {}", e))?;
+    
+    let search_results: Vec<SearchResult> = results
+        .into_iter()
+        .enumerate()
+        .map(|(i, r)| SearchResult {
+            rank: i + 1,
+            name: r.name,
+            score: r.score,
+            description_matches: r.description_matches,
+            etiology_matches: r.etiology_matches,
+            manifestation_matches: r.manifestation_matches,
+            description_text: r.description_text,
+            etiology_text: r.etiology_text,
+            manifestation_text: r.manifestation_text,
+        })
+        .collect();
+    
+    Ok(search_results)
+}
+
+fn needs_fetch() -> bool {
+    let xml_path = std::path::Path::new("data/mplus_topics_latest.xml");
     if !xml_path.exists() {
         return true;
     }
     
-    let metadata_path = Path::new("data/conditions_metadata.json");
+    let metadata_path = std::path::Path::new("data/conditions_metadata.json");
     if !metadata_path.exists() {
         return true;
     }
@@ -41,112 +113,28 @@ fn needs_fetch(no_update: bool) -> bool {
             let now = chrono::Utc::now();
             let days_since_update = (now - modified_time).num_days();
             
-            if days_since_update < 10 {
-                return false;
-            } else {
-                println!("Data is {} days old (more than 10 days). Updating...", days_since_update);
+            if days_since_update >= 10 {
+                return true;
             }
         }
     }
     
-    true
+    false
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
-    let cli = Cli::parse();
-    
-    ui::display_welcome();
-    
-    let has_embeddings = embedding::has_embeddings().await;
-    
-    let needs_fresh_data = needs_fetch(cli.no_update);
-    
-    if needs_fresh_data {
-        ui::display_fetching_message();
-        
-        // Fetch conditions from MedlinePlus
-        let conditions = match fetch::fetch_conditions(cli.no_update).await {
-            Ok(c) => c,
-            Err(e) => {
-                eprintln!("Error fetching conditions: {}", e);
-                // Try to load from cache if fetch fails
-                match fetch::load_conditions() {
-                    Ok(c) => c,
-                    Err(_) => {
-                        eprintln!("No cached data available. Exiting.");
-                        return Ok(());
-                    }
-                }
-            }
-        };
-        
-        if !conditions.is_empty() {
-            ui::display_embedding_message();
-            
-            println!("Loading embedding model (gemma-300m)...");
-            let mut model = TextEmbedding::try_new(
-                InitOptions::new(EmbeddingModel::EmbeddingGemma300M),
-            )?;
-            
-            embedding::embed_conditions(conditions, &mut model).await?;
-        }
-    } else if has_embeddings {
-        ui::display_skipping_update();
-    } else {
-        println!("    No embeddings found and --no-update set.");
-        println!("    Attempting to load cached data...");
-        
-        if let Ok(conditions) = fetch::load_conditions() {
-            if !conditions.is_empty() {
-                ui::display_embedding_message();
-                println!("Loading embedding model (gemma-300m)...");
-                let mut model = TextEmbedding::try_new(
-                    InitOptions::new(EmbeddingModel::EmbeddingGemma300M),
-                )?;
-                embedding::embed_conditions(conditions, &mut model).await?;
-            }
-        } else {
-            println!("No cached data available. Run without --no-update to fetch data.");
-            return Ok(());
-        }
-    }
-    
-    ui::display_initializing();
-    
-    if !embedding::has_embeddings().await {
-        println!("No embeddings found in database!");
-        return Ok(());
-    }
-    println!("Database ready");
-    
-    loop {
-        let user_input = ui::get_user_input();
-        
-        if user_input.to_lowercase() == "q" || user_input.is_empty() {
-            println!("\nGoodbye! Take care!");
-            break;
-        }
-        
-        println!("Embedding your input...");
-        let mut model = TextEmbedding::try_new(
-            InitOptions::new(EmbeddingModel::EmbeddingGemma300M),
-        )?;
-        
-        let query_embedding = model.embed(vec![user_input], None)?[0].clone();
-        
-        let results = search::cross_reference_search(
-            query_embedding,
-            cli.top_k,
-        ).await?;
-        
-        search::display_results(&results);
-        
-        if !ui::ask_search_again() {
-            println!("\nGoodbye! Take care!");
-            break;
-        }
-    }
-    
-    Ok(())
+fn main() {
+    tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
+        .invoke_handler(tauri::generate_handler![
+            check_database,
+            initialize_database,
+            search_symptoms,
+        ])
+        .setup(|app| {
+            let window = app.get_webview_window("main").unwrap();
+            window.set_title("Shiroyaku - Medical Symptom Search").ok();
+            Ok(())
+        })
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
 }

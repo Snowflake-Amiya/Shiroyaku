@@ -3,14 +3,24 @@ name = "shiroyaku"
 version = "0.1.0"
 edition = "2021"
 
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
 [dependencies]
-# Fetching data from MedlinePlus
+# Tauri
+tauri = { version = "2", features = ["devtools"] }
+tauri-plugin-shell = "2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# CLI
+clap = { version = "4.5", features = ["derive"] }
+anyhow = "1.0"
+
+# Data fetching
 reqwest = { version = "0.12", features = ["blocking", "rustls-tls"] }
 roxmltree = "0.20"
 chrono = { version = "0.4", features = ["clock"] }
-clap = { version = "4.5", features = ["derive"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
 indicatif = "0.17"
 
 # LanceDB with embedding
@@ -25,9 +35,3 @@ futures = "0.3"
 
 # Embedding
 fastembed = "5.11"
-
-# Error handling
-anyhow = "1.0"
-
-[target.'cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))'.dependencies]
-indicatif = "0.17"
