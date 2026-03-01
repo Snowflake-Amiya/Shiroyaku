@@ -22,6 +22,22 @@
       --accent-light: #E8F0EE;
       --border: #E5E8E4;
       --shadow: rgba(45, 58, 58, 0.06);
+      --overlay: rgba(45, 58, 58, 0.4);
+    }
+
+    [data-theme="dark"] {
+      --bg-primary: #1A1F1F;
+      --bg-secondary: #242B2B;
+      --bg-card: #2A3333;
+      --fg-primary: #E8EDEB;
+      --fg-secondary: #A8B5B5;
+      --fg-muted: #6B7A7A;
+      --accent: #7FA3A3;
+      --accent-hover: #9BBFBF;
+      --accent-light: #2E3D3D;
+      --border: #3A4545;
+      --shadow: rgba(0, 0, 0, 0.25);
+      --overlay: rgba(0, 0, 0, 0.5);
     }
 
     * {
@@ -35,6 +51,7 @@
     body {
       background-color: var(--bg-primary);
       color: var(--fg-primary);
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
 
     .bg-noise {
@@ -46,15 +63,6 @@
     .search-input:focus {
       outline: none;
       box-shadow: 0 0 0 2px var(--accent), 0 8px 32px rgba(107, 142, 142, 0.15);
-    }
-
-    .card-hover {
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .card-hover:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px var(--shadow);
     }
 
     .result-card {
@@ -73,6 +81,18 @@
 
     .nav-item {
       transition: background-color 0.15s ease, color 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.625rem 0.75rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      width: 100%;
+      text-align: left;
+      border: none;
+      cursor: pointer;
+      background: transparent;
     }
 
     .nav-item:hover {
@@ -85,13 +105,9 @@
       color: white;
     }
 
-    .suggestion-item {
-      transition: background-color 0.1s ease;
-    }
-
-    .suggestion-item:hover,
-    .suggestion-item.selected {
-      background-color: var(--bg-secondary);
+    .nav-item:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
     }
 
     @keyframes fadeInUp {
@@ -116,12 +132,36 @@
       }
     }
 
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes scaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
     .animate-fade-in-up {
       animation: fadeInUp 0.5s ease forwards;
     }
 
     .animate-slide-down {
       animation: slideDown 0.2s ease forwards;
+    }
+
+    .animate-fade-in {
+      animation: fadeIn 0.2s ease forwards;
+    }
+
+    .animate-scale-in {
+      animation: scaleIn 0.25s ease forwards;
     }
 
     .stagger-1 { animation-delay: 0.05s; }
@@ -132,16 +172,17 @@
 
     @media (prefers-reduced-motion: reduce) {
       .animate-fade-in-up,
-      .animate-slide-down {
+      .animate-slide-down,
+      .animate-fade-in,
+      .animate-scale-in {
         animation: none;
         opacity: 1;
         transform: none;
       }
-    }
-
-    .status-badge {
-      font-size: 11px;
-      letter-spacing: 0.02em;
+      
+      * {
+        transition-duration: 0.01ms !important;
+      }
     }
 
     .loading-spinner {
@@ -167,25 +208,154 @@
     .match-description { background-color: #DBEAFE; color: #1D4ED8; }
     .match-etiology { background-color: #FEF3C7; color: #D97706; }
     .match-manifestation { background-color: #FCE7F3; color: #DB2777; }
+
+    [data-theme="dark"] .match-description { background-color: #1E3A5F; color: #93C5FD; }
+    [data-theme="dark"] .match-etiology { background-color: #422006; color: #FCD34D; }
+    [data-theme="dark"] .match-manifestation { background-color: #500724; color: #F9A8D4; }
+
+    /* Toggle Switch */
+    .toggle-track {
+      width: 44px;
+      height: 24px;
+      background-color: var(--border);
+      border-radius: 12px;
+      position: relative;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .toggle-track.active {
+      background-color: var(--accent);
+    }
+
+    .toggle-thumb {
+      width: 18px;
+      height: 18px;
+      background-color: white;
+      border-radius: 50%;
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      transition: transform 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    .toggle-track.active .toggle-thumb {
+      transform: translateX(20px);
+    }
+
+    .toggle-track:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* Sidebar border transition */
+    .sidebar-border {
+      border-color: var(--border);
+      background-color: var(--bg-card);
+      transition: border-color 0.3s ease, background-color 0.3s ease;
+    }
+
+    /* Card transitions */
+    .card-transition {
+      transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    /* Input transitions */
+    .input-transition {
+      transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* View transitions */
+    .view-section {
+      transition: opacity 0.2s ease;
+    }
+    
+    /* Settings View Styles */
+    .settings-section {
+      border: 1px solid var(--border);
+      background-color: var(--bg-card);
+      border-radius: 1rem;
+    }
+
+    /* Virtual Scroll Container */
+    .virtual-scroll-container {
+      height: 600px;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .virtual-scroll-content {
+      position: relative;
+    }
+
+    .condition-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .condition-card {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background-color: var(--bg-card);
+      cursor: pointer;
+      transition: background-color 0.15s ease, transform 0.2s ease;
+      overflow: hidden;
+    }
+
+    .condition-card:hover {
+      background-color: var(--bg-secondary);
+      transform: translateY(-1px);
+    }
+
+    .condition-card-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--fg-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .grid-block {
+      position: absolute;
+      left: 0;
+      right: 0;
+    }
   </style>
 </head>
 <body class="min-h-screen">
   <div class="fixed inset-0 bg-noise pointer-events-none"></div>
   
   <div class="relative min-h-screen flex">
-    <aside class="w-64 border-r border-solid min-h-screen p-5 flex flex-col" style="border-color: var(--border); background-color: var(--bg-card);">
+    <aside class="sidebar-border w-64 border-r border-solid min-h-screen p-5 flex flex-col">
       <div class="mb-8 animate-fade-in-up" style="opacity: 0;">
         <h1 class="font-display text-xl font-500" style="color: var(--fg-primary);">Shiroyaku</h1>
         <p class="text-xs mt-1" style="color: var(--fg-muted);">Medical Symptom Search</p>
       </div>
 
       <nav class="flex-1 space-y-1">
-        <a href="#" class="nav-item active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-500 animate-fade-in-up stagger-1" style="opacity: 0;">
+        <button id="searchButton" class="nav-item active animate-fade-in-up stagger-1" style="opacity: 0; color: white;">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
           </svg>
           Search
-        </a>
+        </button>
+        <button id="conditionsButton" class="nav-item animate-fade-in-up stagger-2" style="opacity: 0; color: var(--fg-secondary);">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+          </svg>
+          Conditions
+        </button>
+        <button id="settingsButton" class="nav-item animate-fade-in-up stagger-5" style="opacity: 0; color: var(--fg-secondary);">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+          Settings
+        </button>
       </nav>
 
       <div class="pt-5 border-t" style="border-color: var(--border);">
@@ -202,11 +372,12 @@
     </aside>
 
     <main class="flex-1 flex flex-col">
-      <div class="flex-1 flex flex-col items-center justify-center px-8 py-12">
+      <!-- Search / Conditions View -->
+      <div id="searchView" class="flex-1 flex flex-col items-center justify-center px-8 py-12">
         <div class="w-full max-w-2xl">
           <div class="text-center mb-10 animate-fade-in-up" style="opacity: 0;">
-            <h2 class="font-display text-3xl font-400 mb-2" style="color: var(--fg-primary);">Find conditions</h2>
-            <p class="text-sm" style="color: var(--fg-secondary);">Search by symptoms, condition name, or keywords</p>
+            <h2 id="viewTitle" class="font-display text-3xl font-400 mb-2" style="color: var(--fg-primary);">Find conditions</h2>
+            <p id="viewSubtitle" class="text-sm" style="color: var(--fg-secondary);">Search by symptoms, condition name, or keywords</p>
           </div>
 
           <div class="relative mb-6 animate-fade-in-up stagger-1" style="opacity: 0;">
@@ -214,7 +385,7 @@
               <input 
                 type="text" 
                 id="searchInput"
-                class="search-input w-full px-5 py-4 pr-12 text-base rounded-2xl border transition-all duration-200"
+                class="search-input input-transition w-full px-5 py-4 pr-12 text-base rounded-2xl border"
                 style="background-color: var(--bg-card); border-color: var(--border); color: var(--fg-primary);"
                 placeholder="Enter your symptoms (e.g., chest pain, shortness of breath)..."
                 autocomplete="off"
@@ -224,7 +395,7 @@
               </svg>
             </div>
 
-            <div id="loadingIndicator" class="hidden absolute top-full left-0 right-0 mt-2 p-4 rounded-xl border animate-slide-down" style="background-color: var(--bg-card); border-color: var(--border); box-shadow: 0 8px 32px var(--shadow);">
+            <div id="loadingIndicator" class="hidden absolute top-full left-0 right-0 mt-2 p-4 rounded-xl border animate-slide-down card-transition" style="background-color: var(--bg-card); border-color: var(--border); box-shadow: 0 8px 32px var(--shadow);">
               <div class="flex items-center gap-3">
                 <div class="loading-spinner"></div>
                 <span class="text-sm" style="color: var(--fg-secondary);">Searching conditions...</span>
@@ -245,10 +416,37 @@
             <h3 class="text-sm font-500" style="color: var(--fg-primary);">Top Matching Conditions</h3>
             <span id="resultCount" class="text-xs" style="color: var(--fg-muted);"></span>
           </div>
-          <div id="resultsContainer" class="rounded-xl border overflow-hidden space-y-3" style="background-color: var(--bg-card); border-color: var(--border);">
+          <div id="resultsContainer" class="space-y-3">
           </div>
-          <div class="mt-6 p-4 rounded-xl border" style="background-color: #FEF3C7; border-color: #FCD34D;">
+          <div id="warningBanner" class="card-transition mt-6 p-4 rounded-xl border" style="background-color: #FEF3C7; border-color: #FCD34D;">
             <p class="text-xs font-500" style="color: #92400E;">This is NOT a diagnosis. Consult a medical professional for proper evaluation.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings View -->
+      <div id="settingsView" class="hidden flex-1 flex flex-col items-center justify-center px-8 py-12">
+         <div class="w-full max-w-2xl">
+          <div class="text-center mb-10 animate-fade-in-up" style="opacity: 0;">
+            <h2 class="font-display text-3xl font-400 mb-2" style="color: var(--fg-primary);">Settings</h2>
+            <p class="text-sm" style="color: var(--fg-secondary);">Customize your experience</p>
+          </div>
+
+          <div class="settings-section p-6 card-transition animate-fade-in-up stagger-1" style="opacity: 0;">
+            <!-- Dark Mode Toggle -->
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-500" style="color: var(--fg-primary);">Dark Mode</p>
+                <p class="text-xs mt-0.5" style="color: var(--fg-muted);">Reduce eye strain in low light environments</p>
+              </div>
+              <button id="darkModeToggle" class="toggle-track" role="switch" aria-checked="false" aria-label="Toggle dark mode" tabindex="0">
+                <span class="toggle-thumb"></span>
+              </button>
+            </div>
+          </div>
+          
+          <div class="mt-6 text-center">
+            <p class="text-xs" style="color: var(--fg-muted);">Changes are saved automatically</p>
           </div>
         </div>
       </div>
@@ -264,8 +462,135 @@
     const resultsSection = document.getElementById('resultsSection');
     const resultsContainer = document.getElementById('resultsContainer');
     const resultCount = document.getElementById('resultCount');
+    const viewTitle = document.getElementById('viewTitle');
+    const viewSubtitle = document.getElementById('viewSubtitle');
+    
+    // Views
+    const searchView = document.getElementById('searchView');
+    const settingsView = document.getElementById('settingsView');
+    
+    // Nav buttons
+    const searchButton = document.getElementById('searchButton');
+    const conditionsButton = document.getElementById('conditionsButton');
+    const settingsButton = document.getElementById('settingsButton');
+    
+    // Settings elements
+    const darkModeToggle = document.getElementById('darkModeToggle');
 
     let expandedCard = null;
+    let currentView = 'search'; // 'search', 'conditions', or 'settings'
+    let allConditions = [];
+    let isInitialized = false;
+
+    // Nav item management
+    function setActiveNav(activeButton) {
+      const navButtons = [searchButton, conditionsButton, settingsButton];
+      navButtons.forEach(btn => {
+        btn.classList.remove('active');
+        btn.style.color = 'var(--fg-secondary)';
+      });
+      activeButton.classList.add('active');
+      activeButton.style.color = 'white';
+    }
+
+    function switchToSearchView() {
+      currentView = 'search';
+      setActiveNav(searchButton);
+      
+      searchView.classList.remove('hidden');
+      settingsView.classList.add('hidden');
+      
+      viewTitle.textContent = 'Find conditions';
+      viewSubtitle.textContent = 'Search by symptoms, condition name, or keywords';
+      searchInput.placeholder = 'Enter your symptoms (e.g., chest pain, shortness of breath)...';
+      resultsSection.classList.add('hidden');
+      initialState.classList.remove('hidden');
+      searchInput.value = '';
+    }
+
+    function switchToConditionsView() {
+      currentView = 'conditions';
+      setActiveNav(conditionsButton);
+      
+      searchView.classList.remove('hidden');
+      settingsView.classList.add('hidden');
+      
+      viewTitle.textContent = 'Browse conditions';
+      viewSubtitle.textContent = 'Search by condition name or browse all conditions';
+      searchInput.placeholder = 'Search by condition name...';
+      initialState.classList.add('hidden');
+      loadAllConditions();
+    }
+    
+    function switchToSettingsView() {
+      currentView = 'settings';
+      setActiveNav(settingsButton);
+      
+      searchView.classList.add('hidden');
+      settingsView.classList.remove('hidden');
+    }
+
+    // Dark Mode Management
+    function initTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      
+      if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        darkModeToggle.classList.add('active');
+        darkModeToggle.setAttribute('aria-checked', 'true');
+        updateWarningBanner(true);
+      }
+    }
+
+    function toggleDarkMode() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      
+      if (isDark) {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'light');
+        darkModeToggle.classList.remove('active');
+        darkModeToggle.setAttribute('aria-checked', 'false');
+        updateWarningBanner(false);
+      } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+        darkModeToggle.classList.add('active');
+        darkModeToggle.setAttribute('aria-checked', 'true');
+        updateWarningBanner(true);
+      }
+    }
+
+    function updateWarningBanner(isDark) {
+      const banner = document.getElementById('warningBanner');
+      if (banner) {
+        if (isDark) {
+          banner.style.backgroundColor = '#422006';
+          banner.style.borderColor = '#78350F';
+          banner.querySelector('p').style.color = '#FCD34D';
+        } else {
+          banner.style.backgroundColor = '#FEF3C7';
+          banner.style.borderColor = '#FCD34D';
+          banner.querySelector('p').style.color = '#92400E';
+        }
+      }
+    }
+
+    // Event Listeners for Nav
+    searchButton.addEventListener('click', switchToSearchView);
+    conditionsButton.addEventListener('click', switchToConditionsView);
+    settingsButton.addEventListener('click', switchToSettingsView);
+    
+    darkModeToggle.addEventListener('click', toggleDarkMode);
+    darkModeToggle.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleDarkMode();
+      }
+    });
+
+    // Initialize theme on load
+    initTheme();
 
     async function initialize() {
       try {
@@ -305,9 +630,156 @@
 
     function enableSearch() {
       searchInput.disabled = false;
+      isInitialized = true;
       initialState.innerHTML = `
         <p class="text-sm" style="color: var(--fg-muted);">Ready to search. Enter your symptoms above.</p>
       `;
+    }
+
+    // Virtual scrolling state
+    const ITEMS_PER_BLOCK = 80; // 4 columns x 20 rows
+    const COLUMNS = 4;
+    const ROWS_PER_BLOCK = 20;
+    const ITEM_HEIGHT = 36; // approximate height of each condition card
+    const BUFFER_BLOCKS = 2; // keep 2 blocks in memory away from current
+    let currentBlock = 0;
+    let totalBlocks = 0;
+    let renderedBlocks = new Set();
+    let conditionsScrollContainer = null;
+
+    async function loadAllConditions() {
+      loadingIndicator.classList.remove('hidden');
+      resultsSection.classList.add('hidden');
+      
+      try {
+        allConditions = await invoke('get_all_conditions');
+        
+        // Reset virtual scroll state
+        currentBlock = 0;
+        totalBlocks = Math.ceil(allConditions.length / ITEMS_PER_BLOCK);
+        renderedBlocks = new Set();
+        
+        // Create virtual scroll container
+        createVirtualScrollContainer();
+        
+        // Render initial blocks
+        updateVirtualScroll(0);
+        
+        // Show results section
+        resultsSection.classList.remove('hidden');
+        
+      } catch (err) {
+        resultsContainer.innerHTML = '<div class="p-12 text-center"><p class="text-sm" style="color: #DC2626;">Error loading conditions</p></div>';
+        resultsSection.classList.remove('hidden');
+      } finally {
+        loadingIndicator.classList.add('hidden');
+      }
+    }
+
+    function createVirtualScrollContainer() {
+      const totalHeight = Math.ceil(allConditions.length / COLUMNS) * ITEM_HEIGHT;
+      
+      resultsContainer.innerHTML = `
+        <div id="virtualScrollContainer" class="virtual-scroll-container">
+          <div id="virtualScrollContent" class="virtual-scroll-content" style="height: ${totalHeight}px;">
+          </div>
+        </div>
+      `;
+      
+      conditionsScrollContainer = document.getElementById('virtualScrollContainer');
+      
+      // Add scroll listener
+      conditionsScrollContainer.addEventListener('scroll', handleVirtualScroll);
+      
+      // Initial render
+      updateVirtualScroll(0);
+    }
+
+    function handleVirtualScroll() {
+      const scrollTop = conditionsScrollContainer.scrollTop;
+      const newBlock = Math.floor(scrollTop / (ITEM_HEIGHT * ROWS_PER_BLOCK));
+      
+      if (newBlock !== currentBlock) {
+        currentBlock = newBlock;
+        updateVirtualScroll(currentBlock);
+      }
+    }
+
+    function updateVirtualScroll(blockIndex) {
+      const content = document.getElementById('virtualScrollContent');
+      
+      // Determine which blocks should be rendered (current, plus/minus buffer)
+      const blocksToRender = new Set();
+      for (let i = Math.max(0, blockIndex - BUFFER_BLOCKS); i <= Math.min(totalBlocks - 1, blockIndex + BUFFER_BLOCKS); i++) {
+        blocksToRender.add(i);
+      }
+      
+      // Remove blocks that are no longer needed
+      renderedBlocks.forEach(blockNum => {
+        if (!blocksToRender.has(blockNum)) {
+          const blockElement = document.getElementById(`block-${blockNum}`);
+          if (blockElement) {
+            blockElement.remove();
+          }
+          renderedBlocks.delete(blockNum);
+        }
+      });
+      
+      // Render new blocks
+      blocksToRender.forEach(blockNum => {
+        if (!renderedBlocks.has(blockNum)) {
+          renderBlock(blockNum);
+          renderedBlocks.add(blockNum);
+        }
+      });
+      
+      // Update result count
+      resultCount.textContent = `Showing all ${allConditions.length} conditions`;
+    }
+
+    function renderBlock(blockNum) {
+      const content = document.getElementById('virtualScrollContent');
+      const startIndex = blockNum * ITEMS_PER_BLOCK;
+      const endIndex = Math.min(startIndex + ITEMS_PER_BLOCK, allConditions.length);
+      const blockConditions = allConditions.slice(startIndex, endIndex);
+      
+      const blockDiv = document.createElement('div');
+      blockDiv.id = `block-${blockNum}`;
+      blockDiv.className = 'grid-block';
+      blockDiv.style.top = `${(blockNum * ITEMS_PER_BLOCK / COLUMNS) * ITEM_HEIGHT}px`;
+      
+      blockDiv.innerHTML = `
+        <div class="condition-grid">
+          ${blockConditions.map((c, i) => `
+            <div class="condition-card" onclick="toggleConditionDetails('${escapeHtml(c.name)}')">
+              <div class="condition-card-name" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      
+      content.appendChild(blockDiv);
+    }
+
+    function renderConditionsList(conditions) {
+      if (!conditions || conditions.length === 0) {
+        resultsContainer.innerHTML = '<div class="p-12 text-center"><p class="text-sm" style="color: var(--fg-muted);">No conditions found</p></div>';
+      } else {
+        resultCount.textContent = `Showing all ${conditions.length} conditions`;
+        resultsContainer.innerHTML = conditions.map((c, i) => `
+          <div class="condition-card" 
+               onclick="toggleConditionDetails('${escapeHtml(c.name)}')">
+            <div class="condition-card-name">${escapeHtml(c.name)}</div>
+          </div>
+        `).join('');
+      }
+      resultsSection.classList.remove('hidden');
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
     }
 
     let searchTimeout = null;
@@ -318,18 +790,27 @@
         clearTimeout(searchTimeout);
       }
 
-      if (query.length < 3) {
+      if (query.length < 2) {
         resultsSection.classList.add('hidden');
         loadingIndicator.classList.add('hidden');
+        if (currentView === 'conditions' && allConditions.length > 0) {
+          // Restore virtual scroll view
+          createVirtualScrollContainer();
+          updateVirtualScroll(0);
+        }
         return;
       }
 
       searchTimeout = setTimeout(async () => {
-        await performSearch(query);
-      }, 500);
+        if (currentView === 'search') {
+          await performSymptomSearch(query);
+        } else {
+          await performConditionSearch(query);
+        }
+      }, 300);
     });
 
-    async function performSearch(query) {
+    async function performSymptomSearch(query) {
       loadingIndicator.classList.remove('hidden');
       resultsSection.classList.add('hidden');
 
@@ -339,7 +820,7 @@
           topK: 5
         });
         
-        renderResults(results);
+        renderSymptomResults(results);
       } catch (err) {
         console.error('Search error:', err);
         resultsContainer.innerHTML = `
@@ -353,10 +834,60 @@
       }
     }
 
-    function renderResults(results) {
+    async function performConditionSearch(query) {
+      loadingIndicator.classList.remove('hidden');
+      resultsSection.classList.add('hidden');
+
+      try {
+        // Filter conditions locally since we have all of them
+        const filtered = allConditions.filter(c => 
+          c.name.toLowerCase().includes(query.toLowerCase())
+        );
+        
+        // Render as a simple grid (no virtual scroll for filtered results)
+        renderFilteredConditions(filtered);
+      } catch (err) {
+        console.error('Search error:', err);
+        resultsContainer.innerHTML = `
+          <div class="p-6 text-center">
+            <p class="text-sm" style="color: #DC2626;">Error: ${err}</p>
+          </div>
+        `;
+        resultsSection.classList.remove('hidden');
+      } finally {
+        loadingIndicator.classList.add('hidden');
+      }
+    }
+
+    function renderFilteredConditions(conditions) {
+      if (!conditions || conditions.length === 0) {
+        resultsContainer.innerHTML = `
+          <div class="card-transition p-12 text-center rounded-xl border" style="background-color: var(--bg-card); border-color: var(--border);">
+            <p class="text-sm" style="color: var(--fg-muted);">No matching conditions found.</p>
+          </div>
+        `;
+        resultCount.textContent = '';
+      } else {
+        resultCount.textContent = `Showing ${conditions.length} matching conditions`;
+        
+        // Simple grid without virtual scrolling for filtered results
+        resultsContainer.innerHTML = `
+          <div class="condition-grid" style="grid-template-columns: repeat(4, 1fr); gap: 8px;">
+            ${conditions.map((c, i) => `
+              <div class="condition-card" onclick="toggleConditionDetails('${escapeHtml(c.name)}')">
+                <div class="condition-card-name" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+      resultsSection.classList.remove('hidden');
+    }
+
+    function renderSymptomResults(results) {
       if (!results || results.length === 0) {
         resultsContainer.innerHTML = `
-          <div class="p-12 text-center">
+          <div class="card-transition p-12 text-center rounded-xl border" style="background-color: var(--bg-card); border-color: var(--border);">
             <p class="text-sm" style="color: var(--fg-muted);">No matching conditions found. Try different symptoms.</p>
           </div>
         `;
@@ -365,7 +896,7 @@
         resultCount.textContent = `Showing top ${results.length} results`;
         
         resultsContainer.innerHTML = results.map((result, index) => `
-          <div class="result-card p-5 rounded-xl border cursor-pointer animate-fade-in-up" 
+          <div class="result-card card-transition p-5 rounded-xl border cursor-pointer animate-fade-in-up" 
                style="opacity: 0; animation-delay: ${index * 0.1}s; background-color: var(--bg-card); border-color: var(--border);"
                data-rank="${result.rank}"
                onclick="toggleExpand(${result.rank})">
@@ -376,7 +907,7 @@
                   #${result.rank}
                 </div>
                 <div>
-                  <h4 class="text-base font-500" style="color: var(--fg-primary);">${result.name}</h4>
+                  <h4 class="text-base font-500" style="color: var(--fg-primary);">${escapeHtml(result.name)}</h4>
                   <div class="flex gap-2 mt-2">
                     ${result.description_matches > 0 ? '<span class="match-badge match-description">Description</span>' : ''}
                     ${result.etiology_matches > 0 ? '<span class="match-badge match-etiology">Etiology</span>' : ''}
@@ -394,19 +925,19 @@
               ${result.description_text ? `
                 <div class="mb-3">
                   <p class="text-xs font-500 mb-1" style="color: var(--fg-secondary);">Description</p>
-                  <p class="text-sm" style="color: var(--fg-primary);">${truncate(result.description_text, 300)}</p>
+                  <p class="text-sm" style="color: var(--fg-primary);">${truncate(escapeHtml(result.description_text), 300)}</p>
                 </div>
               ` : ''}
               ${result.etiology_text ? `
                 <div class="mb-3">
                   <p class="text-xs font-500 mb-1" style="color: #D97706;">Etiology (Causes)</p>
-                  <p class="text-sm" style="color: var(--fg-primary);">${truncate(result.etiology_text, 300)}</p>
+                  <p class="text-sm" style="color: var(--fg-primary);">${truncate(escapeHtml(result.etiology_text), 300)}</p>
                 </div>
               ` : ''}
               ${result.manifestation_text ? `
                 <div>
                   <p class="text-xs font-500 mb-1" style="color: #DB2777;">Manifestations (Symptoms)</p>
-                  <p class="text-sm" style="color: var(--fg-primary);">${truncate(result.manifestation_text, 300)}</p>
+                  <p class="text-sm" style="color: var(--fg-primary);">${truncate(escapeHtml(result.manifestation_text), 300)}</p>
                 </div>
               ` : ''}
             </div>
@@ -445,15 +976,33 @@
         expandedCard = null;
       }
     };
+    
+    window.toggleConditionDetails = function(name) {
+      const safeName = name.replace(/[^a-zA-Z0-9]/g, '_');
+      const details = document.getElementById(`details-${safeName}`);
+      const arrow = document.getElementById(`arrow-${safeName}`);
+      
+      if (details.classList.contains('hidden')) {
+        details.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)';
+      } else {
+        details.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+      }
+    };
 
     searchInput.addEventListener('keydown', async (e) => {
       if (e.key === 'Enter') {
         const query = searchInput.value.trim();
-        if (query.length >= 3) {
+        if (query.length >= 2) {
           if (searchTimeout) {
             clearTimeout(searchTimeout);
           }
-          await performSearch(query);
+          if (currentView === 'search') {
+            await performSymptomSearch(query);
+          } else {
+            await performConditionSearch(query);
+          }
         }
       }
     });

@@ -96,6 +96,37 @@ async fn search_symptoms(symptoms: String, top_k: usize) -> Result<Vec<SearchRes
     Ok(search_results)
 }
 
+/// Condition info for listing
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConditionInfo {
+    pub name: String,
+    pub description: Option<String>,
+}
+
+#[tauri::command]
+async fn get_all_conditions() -> Result<Vec<ConditionInfo>, String> {
+    let metadata_path = std::path::Path::new("data/conditions_metadata.json");
+    if !metadata_path.exists() {
+        return Err("No conditions found".to_string());
+    }
+    
+    let contents = std::fs::read_to_string(metadata_path)
+        .map_err(|e| format!("Error reading conditions: {}", e))?;
+    
+    let conditions: Vec<fetch::ConditionData> = serde_json::from_str(&contents)
+        .map_err(|e| format!("Error parsing conditions: {}", e))?;
+    
+    let result: Vec<ConditionInfo> = conditions
+        .into_iter()
+        .map(|c| ConditionInfo {
+            name: c.name,
+            description: Some(c.description),
+        })
+        .collect();
+    
+    Ok(result)
+}
+
 fn needs_fetch() -> bool {
     let xml_path = std::path::Path::new("data/mplus_topics_latest.xml");
     if !xml_path.exists() {
@@ -129,6 +160,7 @@ fn main() {
             check_database,
             initialize_database,
             search_symptoms,
+            get_all_conditions,
         ])
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();
